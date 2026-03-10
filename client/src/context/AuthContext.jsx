@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { mockLogin, mockRegister, mockGetMe } from '../data/mockUsers';
 
 const AuthContext = createContext(null);
 
@@ -13,11 +14,26 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token');
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      // Si es token mock, restaurar desde mockUsers
+      if (token.startsWith('mock-token-')) {
+        const mockUser = mockGetMe(token);
+        setUser(mockUser);
+        setLoading(false);
+        return;
+      }
+
       axios.get('/auth/me')
         .then(res => setUser(res.data))
         .catch(() => {
-          localStorage.removeItem('token');
-          delete axios.defaults.headers.common['Authorization'];
+          // Intentar restaurar con mock si el backend no responde
+          const mockUser = mockGetMe(token);
+          if (mockUser) {
+            setUser(mockUser);
+          } else {
+            localStorage.removeItem('token');
+            delete axios.defaults.headers.common['Authorization'];
+          }
         })
         .finally(() => setLoading(false));
     } else {
@@ -26,21 +42,45 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    const res = await axios.post('/auth/login', { email, password });
-    const { user, token } = res.data;
-    localStorage.setItem('token', token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setUser(user);
-    return user;
+    try {
+      const res = await axios.post('/auth/login', { email, password });
+      const { user, token } = res.data;
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(user);
+      return user;
+    } catch (err) {
+      // Fallback mock cuando no hay backend
+      if (!err.response) {
+        const { user, token } = mockLogin(email, password);
+        localStorage.setItem('token', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setUser(user);
+        return user;
+      }
+      throw err;
+    }
   };
 
   const register = async (data) => {
-    const res = await axios.post('/auth/register', data);
-    const { user, token } = res.data;
-    localStorage.setItem('token', token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setUser(user);
-    return user;
+    try {
+      const res = await axios.post('/auth/register', data);
+      const { user, token } = res.data;
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(user);
+      return user;
+    } catch (err) {
+      // Fallback mock cuando no hay backend
+      if (!err.response) {
+        const { user, token } = mockRegister(data);
+        localStorage.setItem('token', token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setUser(user);
+        return user;
+      }
+      throw err;
+    }
   };
 
   const logout = () => {
