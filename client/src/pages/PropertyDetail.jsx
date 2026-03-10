@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { mockProperties } from '../data/mockProperties';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { differenceInDays, addDays, isWithinInterval, parseISO } from 'date-fns';
@@ -30,7 +31,12 @@ export default function PropertyDetail() {
   useEffect(() => {
     axios.get(`/properties/${id}`)
       .then(res => { setProperty(res.data); setLoading(false); })
-      .catch(() => { setLoading(false); });
+      .catch(() => {
+        // Fallback a datos mock cuando no hay backend
+        const found = mockProperties.find(p => p.id === Number(id));
+        setProperty(found ? { ...found, reviews: [], reservedDates: [] } : null);
+        setLoading(false);
+      });
   }, [id]);
 
   const isDateReserved = (date) => {

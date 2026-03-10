@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import PropertyCard from '../components/PropertyCard';
+import { mockProperties } from '../data/mockProperties';
 
 const DEPARTMENTS = [
   'Todos', 'San Salvador', 'La Libertad', 'Santa Ana', 'Sonsonate',
@@ -39,7 +40,17 @@ export default function Home() {
       const res = await axios.get('/properties', { params });
       setProperties(res.data);
     } catch (err) {
-      console.error(err);
+      // Fallback a datos mock cuando no hay backend (ej. GitHub Pages)
+      let filtered = mockProperties;
+      if (search) filtered = filtered.filter(p =>
+        p.title.toLowerCase().includes(search.toLowerCase()) ||
+        p.municipality?.toLowerCase().includes(search.toLowerCase())
+      );
+      if (department && department !== 'Todos') filtered = filtered.filter(p => p.department === department);
+      if (type) filtered = filtered.filter(p => p.property_type === type);
+      if (maxPrice) filtered = filtered.filter(p => p.price_per_night <= Number(maxPrice));
+      if (guests) filtered = filtered.filter(p => p.max_guests >= Number(guests));
+      setProperties(filtered);
     } finally {
       setLoading(false);
     }
