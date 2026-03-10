@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "CasaSV Client",
+      "runtimeExecutable": "C:\\Windows\\System32\\cmd.exe",
+      "runtimeArgs": ["/c", "cd client && node_modules\\.bin\\vite.cmd --host --port 5173"],
+      "port": 5173
+    }
+  ]
+}
